@@ -58,7 +58,7 @@ const (
 	MessageResourceSynced = "Pod synced successfully"
 )
 
-// Controller is the controller implementation for Foo resources
+// Controller is the controller implementation to manage pods
 type Controller struct {
 	// kubeclientset is a standard kubernetes clientset
 	kubeclientset kubernetes.Interface
@@ -77,7 +77,7 @@ type Controller struct {
 	recorder record.EventRecorder
 }
 
-// NewController returns a new sample controller
+// NewController returns a new controller
 func NewController(
 	ctx context.Context,
 	kubeclientset kubernetes.Interface,
@@ -100,6 +100,7 @@ func NewController(
 	}
 
 	logger.Info("Setting up event handlers")
+	//Setup event handlers for when pods are created, changed or deleted
 	podInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc: controller.handleObject,
 		UpdateFunc: func(old, new interface{}) {
@@ -270,9 +271,9 @@ func (c *Controller) syncHandler(ctx context.Context, key string) error {
 	return nil
 }
 
-// enqueueFoo takes a Foo resource and converts it into a namespace/name
+// enqueuePod takes a Pod resource and converts it into a namespace/name
 // string which is then put onto the work queue. This method should *not* be
-// passed resources of any type other than Foo.
+// passed resources of any type other than Pod.
 func (c *Controller) enqueuePod(obj interface{}) {
 	var key string
 	var err error
@@ -284,10 +285,10 @@ func (c *Controller) enqueuePod(obj interface{}) {
 }
 
 // handleObject will take any resource implementing metav1.Object and attempt
-// to find the Foo resource that 'owns' it. It does this by looking at the
+// to find the Pod resource that 'owns' it. It does this by looking at the
 // objects metadata.ownerReferences field for an appropriate OwnerReference.
-// It then enqueues that Foo resource to be processed. If the object does not
-// have an appropriate OwnerReference, it will simply be skipped.
+// It then enqueues that Pod resource to be processed. If the pod is not Owned
+// ny a Job it will be skipped
 func (c *Controller) handleObject(obj interface{}) {
 	var object metav1.Object
 	var ok bool
@@ -336,7 +337,6 @@ func (c *Controller) handleDeleteObject(obj interface{}) {
 
 // Send a shutdown signal to sidecar containers in the Pod
 func (c *Controller) sendShutdownSignal(ctx context.Context, pod *corev1.Pod, containers set.Set) {
-	//log.Infof("It's going down, I'm yelling TIMBERRRRR for pod: %s", pod.Name)
 
 	// Multiple arguments must be provided as separate "command" parameters
 	// The first one is added automatically.
@@ -372,6 +372,7 @@ func (c *Controller) sendShutdownSignal(ctx context.Context, pod *corev1.Pod, co
 			TTY:       false,
 		}, parameterCodec)
 
+        logger.Info("Initiating exec into pod to kill main process")
 		exec, err := remotecommand.NewSPDYExecutor(config, "POST", req.URL())
 		if err != nil {
 			logger.Info("There was an error executing", err)
