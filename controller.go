@@ -342,7 +342,7 @@ func (c *Controller) sendShutdownSignal(ctx context.Context, pod *corev1.Pod, co
 	// The first one is added automatically.
 	// Todo: Update requestFromConfig to handle this better
 	logger := klog.FromContext(ctx)
-	config, err := clientcmd.BuildConfigFromFlags("", "/Users/uchenebed/.kube/config")
+	config, err := clientcmd.BuildConfigFromFlags("", "")
 	if err != nil {
         return
 	}
